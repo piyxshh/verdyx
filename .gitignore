@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+venv/
+.venv/
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.env
+*.env.local
+!.env.example
+!backend/.env.example
+
+# ML artifacts (large files)
+ml/models/*.pkl
+ml/data/*.csv
+ml/evaluation/*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+build/
+*.egg-info/
