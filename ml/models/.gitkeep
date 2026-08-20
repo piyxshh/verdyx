@@ -1,0 +1,2 @@
+# This file is a placeholder. The trained model will be saved here by train_model.py.
+# Do not commit the actual .pkl file to version control (it's in .gitignore).
