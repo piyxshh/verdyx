@@ -17,7 +17,25 @@ import joblib
 DATA_PATH = os.path.join(os.path.dirname(__file__), "data", "taiwanese_bankruptcy.csv")
 MODEL_OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "models", "predictor.pkl")
 MEDIANS_OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "models", "feature_medians.json")
+RANGES_OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "models", "feature_ranges.json")
 METRICS_OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "evaluation", "metrics.json")
+
+# Form fields — MUST match backend/prediction/feature_config.py FORM_FIELDS
+# These are the top 10 by feature_importances_ from the 95-feature run (AUC 0.9506).
+# Retraining on only these 10 gives AUC ~0.925 while making the 10-field form
+# fully determinative (no 85-feature median dilution that capped prob at 0.11).
+FORM_FIELDS_RAW = [
+    " Borrowing dependency",
+    " Total debt/Total net worth",
+    " Persistent EPS in the Last Four Seasons",
+    " Net Income to Total Assets",
+    " Retained Earnings to Total Assets",
+    " Continuous interest rate (after tax)",
+    " Debt ratio %",
+    " Net worth/Assets",
+    " Net profit before tax/Paid-in capital",
+    " After-tax net Interest Rate",
+]
 
 RANDOM_STATE = 42
 TEST_SIZE = 0.2
@@ -44,12 +62,19 @@ def main():
     print(f"  Bankrupt (1):     {class_dist.get(1, 0)} ({class_dist.get(1, 0)/len(df)*100:.2f}%)")
 
     # --- 3. Prepare Features and Target ---
-    print("\n[3/7] Preparing features and target...")
-    X = df.drop(target_col, axis=1)
+    print(f"\n[3/7] Preparing features and target (10-field form model)...")
+    # Use only the 10 form fields — the full 95-feature model suffered from
+    # median-fill dilution (max prob 0.11 via 10-field input). The 10-field
+    # model is fully determined by user input and achieves AUC ~0.925.
+    X = df[FORM_FIELDS_RAW]
     y = df[target_col]
+    print(f"  Form fields: {len(FORM_FIELDS_RAW)}")
+    print(f"  X shape: {X.shape}")
 
-    # Compute and save feature medians (for inference-time filling)
+    # Compute and save feature medians (for inference-time filling of the 10 fields
+    # if user omits any; no longer need 85-feature median fill)
     feature_medians = X.median().to_dict()
+    feature_ranges = {col: {"min": float(X[col].min()), "max": float(X[col].max())} for col in X.columns}
 
     # --- 4. Train/Test Split ---
     print("\n[4/7] Splitting data (80/20, stratified)...")
@@ -108,7 +133,12 @@ def main():
     # Save medians
     with open(MEDIANS_OUTPUT_PATH, "w") as f:
         json.dump(feature_medians, f, indent=2)
-    print(f"  Medians saved to: {MEDIANS_OUTPUT_PATH}")
+    print(f"  Medians saved to: {MEDIANS_OUTPUT_PATH} ({len(feature_medians)} features)")
+
+    # Save ranges (for input clamping)
+    with open(RANGES_OUTPUT_PATH, "w") as f:
+        json.dump(feature_ranges, f, indent=2)
+    print(f"  Ranges saved to: {RANGES_OUTPUT_PATH}")
 
     # Save metrics
     metrics = {

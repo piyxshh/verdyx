@@ -1,0 +1,42 @@
+{
+  " Borrowing dependency": {
+    "min": 0.0,
+    "max": 1.0
+  },
+  " Total debt/Total net worth": {
+    "min": 0.0,
+    "max": 9940000000.0
+  },
+  " Persistent EPS in the Last Four Seasons": {
+    "min": 0.0,
+    "max": 1.0
+  },
+  " Net Income to Total Assets": {
+    "min": 0.0,
+    "max": 1.0
+  },
+  " Retained Earnings to Total Assets": {
+    "min": 0.0,
+    "max": 1.0
+  },
+  " Continuous interest rate (after tax)": {
+    "min": 0.0,
+    "max": 1.0
+  },
+  " Debt ratio %": {
+    "min": 0.0,
+    "max": 1.0
+  },
+  " Net worth/Assets": {
+    "min": 0.0,
+    "max": 1.0
+  },
+  " Net profit before tax/Paid-in capital": {
+    "min": 0.0,
+    "max": 1.0
+  },
+  " After-tax net Interest Rate": {
+    "min": 0.0,
+    "max": 1.0
+  }
+}
