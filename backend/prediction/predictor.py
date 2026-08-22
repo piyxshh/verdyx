@@ -40,6 +40,18 @@ class Predictor:
         self.feature_names = list(self.medians.keys())
         print(f"Predictor loaded: {len(self.feature_names)} features")
 
+        # Optional: load per-feature min/max for input clamping
+        # (prevents OOD extremes from derailing tree splits)
+        ranges_path = os.path.join(os.path.dirname(medians_path), "feature_ranges.json")
+        ranges_path = os.getenv("RANGES_PATH", ranges_path)
+        self.ranges = None
+        if os.path.exists(ranges_path):
+            with open(ranges_path, "r") as f:
+                self.ranges = json.load(f)
+            print(f"Feature ranges loaded: {len(self.ranges)} features")
+        else:
+            print(f"Feature ranges not found at {ranges_path} — clamping disabled")
+
     def predict(
         self, user_features: dict[str, float]
     ) -> dict[str, Any]:
@@ -72,7 +84,22 @@ class Predictor:
         for user_key, value in user_features.items():
             matched_col = col_lookup.get(user_key) or col_lookup.get(user_key.strip())
             if matched_col and matched_col in full_features:
-                full_features[matched_col] = float(value)
+                val = float(value)
+                # Clamp to observed training range if available
+                if self.ranges and matched_col in self.ranges:
+                    r = self.ranges[matched_col]
+                    val = max(r["min"], min(r["max"], val))
+                full_features[matched_col] = val
+
+        # Optional: clamp any remaining features that might be out of range
+        # (defensive — medians are always in range, so this is a no-op for them)
+        if self.ranges:
+            for col in self.feature_names:
+                if col in self.ranges:
+                    r = self.ranges[col]
+                    v = full_features[col]
+                    if v < r["min"] or v > r["max"]:
+                        full_features[col] = max(r["min"], min(r["max"], v))
 
         # Step 3: Build feature DataFrame in the correct column order
         df_input = pd.DataFrame([full_features])[self.feature_names]

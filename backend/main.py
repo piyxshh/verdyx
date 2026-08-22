@@ -16,8 +16,33 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from agents.decision_agent import decision_agent_node
+from agents.finance_agent import finance_agent_node
+from agents.market_agent import market_agent_node
+from agents.risk_agent import risk_agent_node
+from orchestrator.graph import create_prediction_graph
 from prediction.predictor import Predictor
 from routers import predict
+
+
+def make_predictor_node(predictor_instance: Predictor):
+    """
+    Bind the loaded Predictor instance into a LangGraph node.
+
+    The predictor node runs FIRST in the graph — pure ML, no LLM.
+    It expands the user's 8-10 form fields into the full 95-feature vector
+    (median-filled) and populates distress_probability + top_factors.
+    """
+
+    def predictor_node(state) -> dict:
+        result = predictor_instance.predict(state["company_features"])
+        return {
+            "company_features": result["all_features"],  # full 95-feature vector
+            "distress_probability": result["distress_probability"],
+            "top_factors": result["top_factors"],
+        }
+
+    return predictor_node
 
 # Load environment variables
 root_dir = Path(__file__).resolve().parent.parent
@@ -43,6 +68,17 @@ async def lifespan(app: FastAPI):
 
     # Store predictor in app state for access in routes
     app.state.predictor = predictor
+
+    # Build and compile the LangGraph pipeline:
+    # predictor → [finance, market] (parallel) → risk → decision
+    app.state.graph = create_prediction_graph(
+        make_predictor_node(predictor),
+        finance_agent_node,
+        market_agent_node,
+        risk_agent_node,
+        decision_agent_node,
+    )
+    print("LangGraph pipeline compiled: predictor -> [finance, market] -> risk -> decision")
 
     yield
 

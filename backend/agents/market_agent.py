@@ -25,10 +25,11 @@ async def market_agent_node(state: ScenarioState) -> dict:
     Output to state:
         - market_report: str
     """
-    # Extract market-relevant features from the full feature set
+    # Extract market-relevant features (normalize for leading-space mismatch)
+    market_set = {f.strip() for f in MARKET_FEATURES}
     relevant_features = {
-        k: v for k, v in state["company_features"].items()
-        if k in MARKET_FEATURES
+        k.strip(): v for k, v in state["company_features"].items()
+        if k.strip() in market_set
     }
 
     messages = build_agent_prompt(

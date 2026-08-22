@@ -24,10 +24,12 @@ async def finance_agent_node(state: ScenarioState) -> dict:
     Output to state:
         - finance_report: str
     """
-    # Extract finance-relevant features from the full feature set
+    # Extract finance-relevant features (normalize for leading-space mismatch
+    # between dataset columns like " Debt ratio %" and config entries like "Debt ratio %")
+    finance_set = {f.strip() for f in FINANCE_FEATURES}
     relevant_features = {
-        k: v for k, v in state["company_features"].items()
-        if k in FINANCE_FEATURES
+        k.strip(): v for k, v in state["company_features"].items()
+        if k.strip() in finance_set
     }
 
     messages = build_agent_prompt(

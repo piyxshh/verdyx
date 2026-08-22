@@ -31,51 +31,91 @@ router = APIRouter()
 predictions_store: dict = {}
 
 
-@router.post("", response_model=PredictionCreateResponse)
+@router.post("", response_model=PredictionResultResponse)
 async def create_prediction(request: PredictionRequest, req: Request):
     """
     Submit a new prediction request.
 
-    Runs the full pipeline:
+    Runs the full pipeline synchronously (inline) and returns the complete result:
     1. ML Predictor (RandomForest) — FIRST, no LLM
     2. Finance Agent (interpret solvency)
     3. Market Agent (interpret operations) — parallel with Finance
     4. Risk Agent (identify failure modes) — after Finance + Market
     5. Decision Agent (final verdict) — LAST
+
+    Total latency ~8-15s (dominated by the 4 LLM calls).
     """
     prediction_id = str(uuid.uuid4())
-    predictor = req.app.state.predictor
+    graph = req.app.state.graph
 
-    # Step 1: ML Prediction — runs FIRST, before any agent
-    prediction_result = predictor.predict(request.company_features)
-
-    # Store initial state
-    predictions_store[prediction_id] = {
-        "prediction_id": prediction_id,
-        "status": PredictionStatus.PROCESSING,
+    # Initial state — only inputs; the predictor node populates everything ML-related
+    initial_state = {
+        "scenario_id": prediction_id,
+        "user_id": "anonymous",  # auth not wired yet
         "company_features": request.company_features,
-        "distress_probability": prediction_result["distress_probability"],
-        "top_factors": prediction_result["top_factors"],
-        "created_at": datetime.now(timezone.utc),
-        # Agent reports will be populated as they complete
-        "finance_report": None,
-        "market_report": None,
-        "risk_report": None,
-        "final_verdict": None,
-        "confidence": None,
-        "reasoning_summary": None,
-        "risk_tier": None,
-        "completed_at": None,
     }
 
-    # TODO: Run agent pipeline asynchronously (for now, synchronous placeholder)
-    # In production: dispatch to background task, return 202 Accepted
-    # For MVP: run inline and update store
+    try:
+        final_state = await graph.ainvoke(initial_state)
+    except Exception as e:
+        predictions_store[prediction_id] = {
+            "prediction_id": prediction_id,
+            "status": PredictionStatus.FAILED,
+            "company_features": request.company_features,
+            "created_at": datetime.now(timezone.utc),
+            "completed_at": datetime.now(timezone.utc),
+        }
+        raise HTTPException(status_code=500, detail=f"Prediction pipeline failed: {e}")
 
-    return PredictionCreateResponse(
-        prediction_id=prediction_id,
-        status=PredictionStatus.PROCESSING,
-        message="Prediction pipeline initiated. ML prediction complete, agents running.",
+    record = {
+        "prediction_id": prediction_id,
+        "status": PredictionStatus.COMPLETED,
+        "company_features": request.company_features,
+        "distress_probability": final_state["distress_probability"],
+        "top_factors": final_state["top_factors"],
+        "finance_report": final_state.get("finance_report"),
+        "market_report": final_state.get("market_report"),
+        "risk_report": final_state.get("risk_report"),
+        "final_verdict": final_state.get("final_verdict"),
+        "confidence": final_state.get("confidence"),
+        "reasoning_summary": final_state.get("reasoning_summary"),
+        "risk_tier": final_state.get("final_verdict"),
+        "created_at": datetime.now(timezone.utc),
+        "completed_at": datetime.now(timezone.utc),
+    }
+    predictions_store[prediction_id] = record
+
+    return _build_result_response(record)
+
+
+def _build_result_response(pred: dict) -> PredictionResultResponse:
+    """Assemble the full result response from a stored prediction record."""
+    return PredictionResultResponse(
+        prediction_id=pred["prediction_id"],
+        status=pred["status"],
+        distress_probability=pred.get("distress_probability"),
+        risk_tier=pred.get("risk_tier"),
+        top_factors=[TopFactor(**f) for f in (pred.get("top_factors") or [])],
+        agent_reports=(
+            AgentReports(
+                finance=pred.get("finance_report") or "",
+                market=pred.get("market_report") or "",
+                risk=pred.get("risk_report") or "",
+            )
+            if pred.get("finance_report")
+            else None
+        ),
+        final_verdict=(
+            FinalVerdict(
+                tier=pred.get("risk_tier") or "Unknown",
+                confidence=pred.get("confidence") or 0.0,
+                reasoning=pred.get("reasoning_summary") or "",
+            )
+            if pred.get("final_verdict")
+            else None
+        ),
+        created_at=pred["created_at"],
+        completed_at=pred.get("completed_at"),
     )
 
 
@@ -99,29 +139,7 @@ async def get_prediction_result(prediction_id: str):
     if prediction_id not in predictions_store:
         raise HTTPException(status_code=404, detail="Prediction not found")
 
-    pred = predictions_store[prediction_id]
-
-    return PredictionResultResponse(
-        prediction_id=prediction_id,
-        status=pred["status"],
-        distress_probability=pred.get("distress_probability"),
-        risk_tier=pred.get("risk_tier"),
-        top_factors=[
-            TopFactor(**f) for f in (pred.get("top_factors") or [])
-        ],
-        agent_reports=AgentReports(
-            finance=pred.get("finance_report") or "",
-            market=pred.get("market_report") or "",
-            risk=pred.get("risk_report") or "",
-        ) if pred.get("finance_report") else None,
-        final_verdict=FinalVerdict(
-            tier=pred.get("risk_tier") or "Unknown",
-            confidence=pred.get("confidence") or 0.0,
-            reasoning=pred.get("reasoning_summary") or "",
-        ) if pred.get("final_verdict") else None,
-        created_at=pred["created_at"],
-        completed_at=pred.get("completed_at"),
-    )
+    return _build_result_response(predictions_store[prediction_id])
 
 
 @router.get("", response_model=PredictionHistoryResponse)

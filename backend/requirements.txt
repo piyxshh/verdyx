@@ -4,18 +4,18 @@ uvicorn[standard]==0.30.0
 pydantic==2.9.0
 python-dotenv==1.0.1
 
-# ML
-scikit-learn==1.5.0
+# ML (pinned to the version the model was trained with — must match predictor.pkl)
+scikit-learn==1.9.0
 joblib==1.4.2
 pandas==2.2.0
 numpy==1.26.4
 
-# Agent Orchestration
-langgraph==0.2.0
-langchain-core==0.3.0
-langchain-groq==0.2.0
-langchain-openai==0.2.0
-langchain-google-genai==2.0.0
+# Agent Orchestration (flexible ranges — strict pins conflicted on langchain-core)
+langgraph>=0.2.0,<0.3
+langchain-core>=0.3.0,<0.4
+langchain-groq>=0.2.0,<0.3
+langchain-openai>=0.2.0,<0.3
+langchain-google-genai>=2.0.0,<3
 
 # Database
 supabase==2.7.0
