@@ -1,19 +1,5 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.11",
-        "includeFiles": "{backend,ml}/**"
-      }
-    },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/next"
-    }
-  ],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
       "source": "/predict",
