@@ -43,3 +43,14 @@ out/
 dist/
 build/
 *.egg-info/
+
+# Local-Only Documentation & Guides (Kept locally, untracked on git)
+AGENTS.md
+PRD.md
+SKILL.md
+TASKS.md
+backend/README.md
+frontend/README.md
+ml/DATA_SOURCES.md
+VERDYX_ARCHITECTURE_AND_ML_GUIDE.html
+*.html

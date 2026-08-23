@@ -1,6 +1,11 @@
 import { CompanyFeatures, PredictionResult, TopFactor } from "./types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// In production (Vercel monorepo) NEXT_PUBLIC_API_URL is unset, so we use
+// same-origin "/predict" which is rewritten to the Python serverless function.
+// In local dev .env.local sets it to "http://localhost:8000" for the separate
+// FastAPI dev server. The fallback to localhost:8000 is kept for local dev
+// where the env var might be missing, but on Vercel the rewrite handles it.
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 
 /**
  * Submit financial ratios to backend and run complete ML + Multi-Agent pipeline.
@@ -14,7 +19,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
  */
 export async function runPrediction(features: CompanyFeatures): Promise<PredictionResult> {
   try {
-    const response = await fetch(`${API_BASE_URL}/predict`, {
+    const endpoint = API_BASE_URL ? `${API_BASE_URL}/predict` : "/predict";
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ company_features: features }),
