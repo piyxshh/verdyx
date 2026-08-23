@@ -11,23 +11,27 @@
 Verdyx is an ML-powered multi-agent system for predictive enterprise decision intelligence. The core architectural invariant is:
 
 > **Prediction is architecturally prior to interpretation.**  
-> The ML model produces a distress probability *before* any LLM agent runs. Agents interpret — they never generate the prediction.
-
-```
+> The ML model produces a distress probability *before* any LLM agent runs. Agents interpret — they never generate the predictio```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        VERDYX SYSTEM                                │
 │                                                                     │
 │  ┌──────────┐    ┌──────────┐    ┌──────────────┐    ┌──────────┐  │
 │  │ Frontend │───▶│ Backend  │───▶│  ML Predictor │───▶│  Agents  │  │
 │  │ (Next.js)│◀───│ (FastAPI)│◀───│  (sklearn RF) │◀───│(LangGraph│  │
-│  └──────────┘    └──────────┘    └──────────────┘    └──────────┘  │
-│       │               │                                    │        │
-│       └───────────────┼────────────────────────────────────┘        │
-│                       ▼                                             │
-│               ┌──────────────┐                                      │
-│               │  PostgreSQL  │                                      │
-│               │  (Supabase)  │                                      │
-│               └──────────────┘                                      │
+│  └────┬─────┘    └────┬─────┘    └──────────────┘    └──────────┘  │
+│       │               │                                             │
+│       ▼               ▼                                             │
+│  ┌──────────┐   ┌──────────┐                                        │
+│  │  Browser │   │In-Memory │                                        │
+│  │ LocalStg │   │ DictStore│                                        │
+│  └──────────┘   └──────────┘                                        │
+│       ┆               ┆ (Optional Cloud Stretch Goal)               │
+│       └···············┼·············································┘
+│                       ▼
+│               ┌──────────────┐
+│               │  PostgreSQL  │ (Future SaaS Extension)
+│               │  (Supabase)  │
+│               └──────────────┘
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -40,21 +44,46 @@ Verdyx is an ML-powered multi-agent system for predictive enterprise decision in
 ```
 ┌─────────────────────────────────────────────────────┐
 │                 PRESENTATION LAYER                   │
-│  Next.js 14+ │ Tailwind CSS │ shadcn/ui │ Recharts  │
-│  Pages: Auth | Dashboard | New Scenario | Results   │
+│  Next.js 14+ │ Tailwind CSS │ Lucide │ Recharts     │
+│  Interactive 10-Ratio Form │ Risk Gauge │ Agent Deck │
+│  Client-side LocalStorage Persistence               │
 ├─────────────────────────────────────────────────────┤
 │                   API GATEWAY                        │
-│  Next.js API Routes → FastAPI Backend                │
-│  REST endpoints │ CORS │ Auth middleware             │
+│  Next.js API Client (lib/api.ts) → FastAPI Backend   │
+│  REST endpoints │ CORS │ Fallback Simulation Engine │
 ├─────────────────────────────────────────────────────┤
 │                 APPLICATION LAYER                    │
-│  FastAPI │ Pydantic models │ Request validation      │
-│  Routes: /predict │ /predict/{id} │ /predict/{id}/result │
+│  FastAPI │ Pydantic models │ In-memory store         │
+│  Routes: POST /predict │ GET /predict/{id}          │
 ├─────────────────────────────────────────────────────┤
 │                 PREDICTION LAYER                     │
 │  RandomForestClassifier (scikit-learn)               │
-│  predict_proba() │ feature_importances_              │
-│  Loads predictor.pkl via joblib                      │
+│  predict_proba() │ feature_importances_ (MDI)        │
+│  Loads predictor.pkl & medians via joblib/JSON       │
+├─────────────────────────────────────────────────────┤
+│              AGENT ORCHESTRATION LAYER               │
+│  LangGraph StateGraph                                │
+│  Nodes: Predictor → Finance ─┐                      │
+│                     Market  ─┼─→ Risk → Decision     │
+│                              │                       │
+├─────────────────────────────────────────────────────┤
+│                  DATA LAYER                          │
+│  MVP: Browser LocalStorage + FastAPI In-Memory Store │
+│  Production Stretch: Supabase (PostgreSQL + Auth)    │
+└─────────────────────────────────────────────────────┘
+```
+
+### 2.2 Layer Responsibilities
+
+| Layer | Responsibility | Technology |
+|---|---|---|
+| Presentation | User input form, results display, risk gauge, agent reports | Next.js, Tailwind, Recharts, Lucide |
+| API Gateway | Route frontend requests to backend, handle CORS & offline fallback | Fetch API, `lib/api.ts` |
+| Application | Request validation, orchestration dispatch, response formatting | FastAPI, Pydantic |
+| Prediction | ML inference — distress probability + feature importances | scikit-learn RandomForestClassifier |
+| Agent Orchestration | Multi-agent interpretation pipeline | LangGraph, Groq / Gemini / OpenAI |
+| Data (MVP) | Instant scenario history without cloud dependencies | Browser `localStorage` + FastAPI in-memory store |
+| Data (SaaS Extension) | Multi-tenant auth, cloud scenario sync | Supabase (PostgreSQL + Auth) |           │
 ├─────────────────────────────────────────────────────┤
 │              AGENT ORCHESTRATION LAYER               │
 │  LangGraph StateGraph                                │
@@ -630,6 +659,10 @@ MARKET_FEATURES = [
 ### ADR-005: class_weight='balanced' over SMOTE
 **Decision:** Use `class_weight='balanced'` for handling class imbalance.  
 **Rationale:** Single parameter, no additional pipeline complexity. SMOTE is a valid stretch goal but `class_weight='balanced'` is sufficient for the MVP and well-documented for this dataset.
+
+### ADR-006: LocalStorage + In-Memory Store for MVP (Decoupled from Supabase)
+**Decision:** Use browser `localStorage` on the frontend and an in-memory dictionary on the FastAPI backend for scenario history persistence during the MVP/demo phase. Supabase (PostgreSQL + Auth) is retained as an optional future SaaS extension.  
+**Rationale:** The core novelty of Verdyx is the ML-Prior multi-agent decision intelligence architecture. Requiring cloud database credentials, row-level security setups, and user authentication adds external failure points without contributing to the machine learning or agentic reasoning thesis. LocalStorage + in-memory store provides instant, reliable, zero-latency persistence suitable for viva demonstrations and offline presentations.
 
 ---
 

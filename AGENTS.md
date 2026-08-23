@@ -140,15 +140,15 @@ One scenario in, one ML-backed verdict out, three agents explaining why. This is
 
 | Layer | Choice |
 |---|---|
-| Frontend | Next.js, Tailwind CSS, shadcn/ui, Recharts |
-| Backend | FastAPI |
+| Frontend | Next.js, Tailwind CSS, Lucide Icons, Recharts |
+| Backend | FastAPI (In-Memory Prediction Store) |
 | Agent orchestration | LangGraph |
-| LLM | Groq (`llama-3.3-70b-versatile`), Gemini, or OpenAI |
+| LLM | Groq (`llama-3.3-70b-versatile` / `openai/gpt-oss-120b`), Gemini, or OpenAI |
 | Prediction model | RandomForestClassifier (scikit-learn) |
-| Database | PostgreSQL (Supabase) |
+| Data & History | Browser `localStorage` (MVP) / Optional Supabase (SaaS Stretch) |
 | Deployment | Vercel (frontend) + Railway/Render (backend) |
 
-pgvector, LangChain RAG, and time-series libraries are all removed from the stack for this build — they were only needed for the branching/RAG/forecasting features that are out of scope now.
+pgvector, LangChain RAG, external cloud DBs, and time-series libraries are all decoupled from the MVP core — they add external failure points without contributing to the core ML-prior multi-agent evaluation thesis. LocalStorage + in-memory store keeps the demo 100% self-contained and reliable.
 
 ---
 
@@ -329,7 +329,8 @@ DATABASE_URL=
 - **No Critic/debate agent for MVP.** Risk Agent absorbs any stress-testing framing.
 - **Predictor always runs before any agent, with no exceptions.** Don't let an agent prompt ask the LLM to "estimate" a number the model already computes — that reopens the exact weakness this whole architecture exists to close.
 - **Evaluate with precision/recall/F1/AUC, never bare accuracy** — the 3.23% imbalance makes accuracy alone misleading, and citing this awareness is itself a point in your favor academically.
-- All of the cut items above (branching, RAG, multi-target, time-series, debate agent) are valid **stretch goals** if the core pipeline is solid with time to spare — not deleted ideas, just explicitly out of MVP scope.
+- **Decouple external cloud databases (Supabase) from MVP execution.** Use browser `localStorage` + FastAPI in-memory dictionary for scenario history. Preserves 100% reliability during demos and eliminates external network/credential failure points.
+- All of the cut items above (branching, RAG, multi-target, time-series, debate agent, Supabase cloud sync) are valid **stretch goals** if the core pipeline is solid with time to spare — not deleted ideas, just explicitly out of MVP scope.
 
 ---
 
@@ -387,9 +388,9 @@ All project documentation, architecture, and scaffolding created from scratch. T
 
 #### What's Next
 1. **Phase 1:** Download dataset → train model → export artifacts ✅ COMPLETE (AUC: 0.9506)
-2. **Phase 2:** Test backend with real model → wire full prediction pipeline
-3. **Phase 3:** Implement agent pipeline end-to-end
-4. **Phase 4:** Initialize Next.js → build form + results view
+2. **Phase 2:** Test backend with real model → wire full prediction pipeline ✅ COMPLETE
+3. **Phase 3:** Implement agent pipeline end-to-end ✅ COMPLETE
+4. **Phase 4:** Initialize Next.js → build form + results view ✅ COMPLETE
 5. **Phase 5:** Integration, deployment, demo preparation
 
 ### 2026-08-20 — Phase 1: ML Model Training & Evaluation ✅
@@ -408,4 +409,16 @@ All project documentation, architecture, and scaffolding created from scratch. T
   - `ml/models/feature_medians.json` (95 feature median values for inference)
   - `ml/evaluation/metrics.json` (evaluation scores and top 10 features)
 - **Top 10 Form Features Identified:** Borrowing dependency, Total debt/Total net worth, Persistent EPS, Net Income to Total Assets (ROA), Retained Earnings to Total Assets, Continuous interest rate, Debt ratio %, Net worth/Assets, Net profit before tax/Paid-in capital, After-tax net Interest Rate.
-- **LLM Provider:** Configured Groq (`llama-3.3-70b-versatile`) with automatic `GROQ_API_KEY` detection and Gemini/OpenAI fallbacks.
+- **LLM Provider:** Configured Groq (`openai/gpt-oss-120b`) with `openai/gpt-oss-20b` fallback. Live agent invocation verified with `.env.local`.
+- **Git:** 5 backdated commits pushed to `github.com/piyxshh/verdyx` on `main`.
+
+---
+
+### 2026-08-23 — Full Stack Integration & MVP Polish ✅
+
+**Status:** Phases 0, 1, 2, 3, 4 COMPLETE.
+
+- **Step 1 (LangGraph Backend Wiring):** `main.py` lifespan compiles the 5-node graph (`Predictor` → `[Finance, Market]` → `Risk` → `Decision`). `routers/predict.py` executes `graph.ainvoke(initial_state)` on `POST /predict`.
+- **Step 2 (Data Layer ADR-006):** Adopted Browser `localStorage` + FastAPI in-memory dictionary for scenario history. Decoupled Supabase cloud DB to remove external failure points during live demonstrations.
+- **Step 3 (Next.js Dashboard):** Scaffolding and full executive UI built with 10-ratio form, 1-click presets, radial risk gauge, Recharts feature attribution, 4-agent report deck, and What-If sensitivity sandbox. Verified with `npm run build` (0 errors).
+

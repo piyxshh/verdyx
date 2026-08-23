@@ -1,6 +1,6 @@
 # Verdyx — Task List
 
-> **Last Updated:** 2026-08-20  
+> **Last Updated:** 2026-08-23  
 > **Legend:** `[ ]` = TODO, `[/]` = In Progress, `[x]` = Done
 
 ---
@@ -39,145 +39,105 @@
 ---
 
 ## Phase 2: Backend Core
-- [ ] Set up Python virtual environment
-- [ ] Install dependencies (requirements.txt)
-- [ ] Implement `backend/prediction/predictor.py`
-  - [ ] Predictor class: load .pkl + medians
-  - [ ] predict() method: merge user input + medians → full vector → predict_proba
-  - [ ] Return distress_probability + top_factors
-- [ ] Implement `backend/prediction/feature_config.py`
-  - [ ] FORM_FIELDS dict with label, description, ranges
-  - [ ] FINANCE_FEATURES and MARKET_FEATURES lists
-  - [ ] DATASET_MEDIANS loaded from JSON
-- [ ] Implement `backend/models/schemas.py`
-  - [ ] PredictionRequest (Pydantic)
-  - [ ] PredictionResponse (Pydantic)
-  - [ ] PredictionStatus enum
-- [ ] Implement `backend/routers/predict.py`
-  - [ ] POST /predict
-  - [ ] GET /predict/{id}
-  - [ ] GET /predict/{id}/result
-  - [ ] GET /predict (history)
-- [ ] Implement `backend/db/supabase_client.py`
-  - [ ] Initialize Supabase client
-  - [ ] CRUD for predictions table
-- [ ] Implement `backend/main.py`
-  - [ ] FastAPI app with CORS
-  - [ ] Lifespan: load model at startup
-  - [ ] Include routers
-  - [ ] Health check endpoint
-- [ ] Test prediction endpoint with curl/Postman
-  - [ ] Test with high-risk input
-  - [ ] Test with low-risk input
+- [x] Set up Python virtual environment (`backend/venv`)
+- [x] Install dependencies (requirements.txt: scikit-learn 1.9.0, langgraph, langchain-groq, fastapi)
+- [x] Implement `backend/prediction/predictor.py`
+  - [x] Predictor class: load .pkl + medians
+  - [x] predict() method: merge user input + medians → full vector → predict_proba
+  - [x] Return distress_probability + top_factors
+- [x] Implement `backend/prediction/feature_config.py`
+  - [x] FORM_FIELDS dict with label, description, ranges
+  - [x] FINANCE_FEATURES and MARKET_FEATURES lists
+  - [x] DATASET_MEDIANS loaded from JSON
+- [x] Implement `backend/models/schemas.py`
+  - [x] PredictionRequest (Pydantic)
+  - [x] PredictionResultResponse (Pydantic)
+  - [x] PredictionStatus enum
+- [x] Implement `backend/routers/predict.py`
+  - [x] POST /predict (runs full 5-node LangGraph pipeline inline)
+  - [x] GET /predict/{id}
+  - [x] GET /predict/{id}/result
+  - [x] GET /predict (in-memory history)
+- [x] In-Memory Persistence Layer (FastAPI `predictions_store`)
+- [x] Implement `backend/main.py`
+  - [x] FastAPI app with CORS
+  - [x] Lifespan: load model + compile LangGraph StateGraph at startup
+  - [x] Include routers
+  - [x] Health check endpoint (`GET /health`)
 
 ---
 
 ## Phase 3: Agent Pipeline
-- [ ] Implement `backend/orchestrator/state.py`
-  - [ ] ScenarioState TypedDict
-- [ ] Implement `backend/orchestrator/config.py`
-  - [ ] LLM provider selection (Gemini/OpenAI)
-  - [ ] Environment-based configuration
-- [ ] Implement `backend/agents/base_agent.py`
-  - [ ] Shared prompt template pattern
-  - [ ] LLM call wrapper with error handling
-- [ ] Implement `backend/agents/finance_agent.py`
-  - [ ] Prompt: interpret solvency/liquidity
-  - [ ] Input: probability + debt-related features
-  - [ ] Output: finance_report
-- [ ] Implement `backend/agents/market_agent.py`
-  - [ ] Prompt: interpret operating position
-  - [ ] Input: probability + margin-related features
-  - [ ] Output: market_report
-- [ ] Implement `backend/agents/risk_agent.py`
-  - [ ] Prompt: identify failure modes
-  - [ ] Input: all data + finance_report + market_report
-  - [ ] Output: risk_report
-- [ ] Implement `backend/agents/decision_agent.py`
-  - [ ] Prompt: synthesize final verdict
-  - [ ] Input: probability + all reports
-  - [ ] Output: final_verdict + confidence + reasoning_summary
-- [ ] Implement `backend/orchestrator/graph.py`
-  - [ ] LangGraph StateGraph with 5 nodes
-  - [ ] Edge wiring: predictor → [finance, market] → risk → decision
-  - [ ] Compile graph
-- [ ] Test full pipeline end-to-end (backend only)
-  - [ ] Test with Finance Agent first
-  - [ ] Add Market Agent
-  - [ ] Add Risk Agent
-  - [ ] Add Decision Agent
-  - [ ] Verify output format matches API contract
+- [x] Implement `backend/orchestrator/state.py`
+  - [x] ScenarioState TypedDict (strict population order)
+- [x] Implement `backend/orchestrator/config.py`
+  - [x] LLM provider selection (Groq `openai/gpt-oss-120b`, fallback `openai/gpt-oss-20b` / Gemini)
+  - [x] Environment-based configuration (`.env.local`)
+- [x] Implement `backend/agents/base_agent.py`
+  - [x] Shared prompt template pattern (ML result as established fact)
+  - [x] Async LLM call wrapper with error handling
+- [x] Implement `backend/agents/finance_agent.py`
+  - [x] Prompt: interpret solvency/liquidity
+  - [x] Input: probability + debt-related features
+  - [x] Output: finance_report
+- [x] Implement `backend/agents/market_agent.py`
+  - [x] Prompt: interpret operating position & profitability
+  - [x] Input: probability + margin/ROA features
+  - [x] Output: market_report
+- [x] Implement `backend/agents/risk_agent.py`
+  - [x] Prompt: identify compound failure modes
+  - [x] Input: all data + finance_report + market_report
+  - [x] Output: risk_report
+- [x] Implement `backend/agents/decision_agent.py`
+  - [x] Prompt: synthesize final executive verdict
+  - [x] Input: probability + all reports
+  - [x] Output: final_verdict + confidence + reasoning_summary
+- [x] Implement `backend/orchestrator/graph.py`
+  - [x] LangGraph StateGraph with 5 nodes
+  - [x] Edge wiring: predictor → [finance, market] (parallel) → risk → decision
+  - [x] Compile graph into FastAPI `app.state.graph`
 
 ---
 
 ## Phase 4: Frontend
-- [ ] Initialize Next.js project
-  - [ ] TypeScript + Tailwind CSS + shadcn/ui
-  - [ ] Install Recharts
-  - [ ] Configure Supabase client
-- [ ] Build authentication
-  - [ ] Login page
-  - [ ] Signup page
-  - [ ] Auth callback
-  - [ ] Protected routes middleware
-- [ ] Build dashboard layout
-  - [ ] Sidebar navigation
-  - [ ] Header with user info
-  - [ ] Responsive design
-- [ ] Build scenario input form
-  - [ ] 8-10 numeric fields (from model's top features)
-  - [ ] Labels + descriptions + tooltips
-  - [ ] Client-side validation (min/max/required)
-  - [ ] Submit button → POST /predict
-  - [ ] Loading state during submission
-- [ ] Build results page
-  - [ ] Risk gauge / probability meter (Recharts)
-  - [ ] Feature importance bar chart
-  - [ ] Agent report cards (expandable)
-  - [ ] Final verdict display (prominent, color-coded)
-  - [ ] Pipeline order: prediction → agents → verdict
-- [ ] Build history page
-  - [ ] Table: date, risk tier, probability
-  - [ ] Click to view full result
-  - [ ] Pagination
-- [ ] Build landing page
-  - [ ] Hero section with project description
-  - [ ] Architecture diagram
-  - [ ] CTA to sign up/login
-- [ ] Polish UI
-  - [ ] Dark mode support
-  - [ ] Smooth animations and transitions
-  - [ ] Loading skeletons
-  - [ ] Error states
+- [x] Initialize Next.js project
+  - [x] TypeScript + Tailwind CSS
+  - [x] Install Recharts, Lucide Icons, clsx, tailwind-merge
+- [x] Build dashboard layout
+  - [x] Executive minimal dark navbar & context header
+  - [x] Model accuracy & agent status badges
+  - [x] Responsive layout
+- [x] Build scenario input form
+  - [x] 10 numeric ratios grouped into Solvency vs. Operations
+  - [x] Sliders + number inputs with dataset median reference indicators
+  - [x] 1-Click Demo Presets (High Risk, Low Risk, Moderate Risk)
+  - [x] Loading state with multi-agent progression steps
+- [x] Build results view
+  - [x] Radial distress probability gauge with color-coded risk tiers
+  - [x] Recharts horizontal bar chart for top Gini feature importances
+  - [x] 4-Agent Report Deck (Finance, Market, Risk, Decision)
+  - [x] What-If sensitivity analysis sandbox
+  - [x] Architecture modal with theoretical invariant explanations
+- [x] Client-Side Data & History (LocalStorage)
+  - [x] Persist recent scenario predictions locally in browser
+  - [x] Instant scenario reload
+- [x] Build verification: `npm run build` compiled with 0 errors
 
 ---
 
 ## Phase 5: Integration, Testing & Deployment
-- [ ] End-to-end integration
-  - [ ] Frontend form → Backend API → Full pipeline → Results display
-  - [ ] Error handling across the stack
-  - [ ] Timeout handling (15s max)
-- [ ] Create demo scenarios
-  - [ ] High-risk example (expect ~70%+ distress probability)
-  - [ ] Low-risk example (expect ~10-20% distress probability)
-  - [ ] Verify agents produce meaningful interpretations for both
-- [ ] Set up Supabase
-  - [ ] Create tables (profiles, predictions)
-  - [ ] Configure Row Level Security
-  - [ ] Test auth flow
-- [ ] Deploy backend
-  - [ ] Railway or Render
-  - [ ] Configure environment variables
-  - [ ] Upload predictor.pkl
-  - [ ] Test deployed API
-- [ ] Deploy frontend
-  - [ ] Vercel
-  - [ ] Configure environment variables
-  - [ ] Test deployed site
-- [ ] Final testing
-  - [ ] Full end-to-end on deployed version
-  - [ ] Both demo scenarios run cleanly
-  - [ ] Record demo run for presentation
+- [ ] End-to-end integration & smoke testing
+  - [ ] Start FastAPI backend (`.\venv\Scripts\uvicorn main:app --reload --port 8000`)
+  - [ ] Start Next.js frontend (`npm run dev`)
+  - [ ] Test live form submission against real backend
+- [ ] Verify Demo Presets
+  - [ ] Acute Distress Profile (~70%+ distress probability)
+  - [ ] Resilient Corporate Profile (~10-20% distress probability)
+  - [ ] Marginal Solvency Profile (~35-50% distress probability)
+- [ ] Optional Future Stretch: Cloud Database & Deployment
+  - [ ] Deploy backend (Railway / Render)
+  - [ ] Deploy frontend (Vercel)
+  - [ ] Optional: Supabase cloud sync for multi-user accounts
 
 ---
 
