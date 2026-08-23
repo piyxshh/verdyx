@@ -226,7 +226,7 @@ export default function DashboardPage() {
       <footer className="mt-auto border-t border-white/[0.08] bg-[#070a12] py-6 text-center text-xs text-slate-500">
         <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>Verdyx — ML-Powered Multi-Agent Decision Intelligence</span>
-          <span>Jadavpur University Academic Project</span>
+          <span>Enterprise Decision Intelligence Platform</span>
         </div>
       </footer>
 

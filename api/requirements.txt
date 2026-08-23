@@ -1,0 +1,28 @@
+# Vercel Python runtime installs from api/requirements.txt
+# This mirrors backend/requirements.txt for the serverless function bundle.
+# See backend/requirements.txt for version rationale.
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+pydantic==2.9.0
+python-dotenv==1.0.1
+
+# ML (must match predictor.pkl training version)
+scikit-learn==1.9.0
+joblib==1.4.2
+pandas==2.2.0
+numpy==1.26.4
+
+# Agent Orchestration
+langgraph>=0.2.0,<0.3
+langchain-core>=0.3.0,<0.4
+langchain-groq>=0.2.0,<0.3
+langchain-openai>=0.2.0,<0.3
+langchain-google-genai>=2.0.0,<3
+
+# Database (optional SaaS stretch, not required for MVP)
+supabase==2.7.0
+
+# Utilities
+httpx==0.27.0
+python-multipart==0.0.9

@@ -737,7 +737,7 @@ npm run dev
 
 ### ADR-006: LocalStorage + In-Memory Store for MVP (Decoupled from Supabase)
 **Decision:** Use browser `localStorage` on the frontend and an in-memory dictionary on the FastAPI backend for scenario history persistence during the MVP/demo phase. Supabase (PostgreSQL + Auth) is retained as an optional future SaaS extension.  
-**Rationale:** The core novelty of Verdyx is the ML-Prior multi-agent decision intelligence architecture. Requiring cloud database credentials, row-level security setups, and user authentication adds external failure points without contributing to the machine learning or agentic reasoning thesis. LocalStorage + in-memory store provides instant, reliable, zero-latency persistence suitable for viva demonstrations and offline presentations.
+**Rationale:** The core novelty of Verdyx is the ML-Prior multi-agent decision intelligence architecture. Requiring cloud database credentials, row-level security setups, and user authentication adds external failure points without contributing to the machine learning or agentic reasoning thesis. LocalStorage + in-memory store provides instant, reliable, zero-latency persistence suitable for live executive demonstrations and offline presentations.
 
 ### ADR-007: Unified Full-Stack Monorepo with Vercel Serverless Gateway
 **Decision:** Organize the project as a unified monorepo with `api/index.py` serving as the serverless bridge for FastAPI under `@vercel/python`, paired with Next.js App Router under `@vercel/next`.  
