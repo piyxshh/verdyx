@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { FORM_FIELDS, DEMO_PRESETS } from "@/lib/constants";
 import { CompanyFeatures } from "@/lib/types";
-import { Sparkles, Play, RotateCcw } from "lucide-react";
+import { Play, RotateCcw } from "lucide-react";
 
 interface ScenarioFormProps {
   initialFeatures: CompanyFeatures;
@@ -16,11 +16,8 @@ export function ScenarioForm({ initialFeatures, isLoading, onSubmit }: ScenarioF
   const [activePreset, setActivePreset] = useState<string | null>("high-risk");
 
   const handleFieldChange = (key: keyof CompanyFeatures, value: number) => {
-    setFeatures((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-    setActivePreset(null); // Custom tweaking
+    setFeatures((prev) => ({ ...prev, [key]: value }));
+    setActivePreset(null);
   };
 
   const applyPreset = (presetId: string) => {
@@ -45,58 +42,54 @@ export function ScenarioForm({ initialFeatures, isLoading, onSubmit }: ScenarioF
     onSubmit(features);
   };
 
-  // Group features into two clean columns: Solvency vs Operations
-  const solvencyFields = Object.entries(FORM_FIELDS).filter(([_, config]) => config.category === "solvency");
-  const operationsFields = Object.entries(FORM_FIELDS).filter(([_, config]) => config.category === "operations");
+  const solvencyFields = Object.entries(FORM_FIELDS).filter(([_, c]) => c.category === "solvency");
+  const operationsFields = Object.entries(FORM_FIELDS).filter(([_, c]) => c.category === "operations");
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      
-      {/* 1-Click Preset Selector Bar */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c1220]/90 p-4 shadow-xl backdrop-blur-xl">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Presets — minimal pills */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-cyan-400" />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-              Instant Demonstration Presets
-            </span>
-          </div>
+          <p className="text-xs font-medium text-slate-600">Try a preset</p>
           <button
             type="button"
             onClick={resetToMedians}
-            className="flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-slate-200"
+            className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900"
           >
-            <RotateCcw className="h-3 w-3" />
-            Reset to Dataset Medians
+            <RotateCcw className="h-3 w-3" /> Reset
           </button>
         </div>
-
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {DEMO_PRESETS.map((preset) => {
             const isSelected = activePreset === preset.id;
-            const borderGlow =
-              preset.risk_tier === "High Risk"
-                ? "border-rose-500/40 bg-rose-500/[0.08] text-rose-300"
-                : preset.risk_tier === "Medium Risk"
-                ? "border-amber-500/40 bg-amber-500/[0.08] text-amber-300"
-                : "border-emerald-500/40 bg-emerald-500/[0.08] text-emerald-300";
-
             return (
               <button
                 key={preset.id}
                 type="button"
                 onClick={() => applyPreset(preset.id)}
-                className={`flex flex-col items-start rounded-xl border p-3 text-left transition-all ${
+                className={`rounded-xl border px-3.5 py-3 text-left transition ${
                   isSelected
-                    ? borderGlow
-                    : "border-white/[0.06] bg-white/[0.02] text-slate-300 hover:border-white/20 hover:bg-white/[0.04]"
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50"
                 }`}
               >
-                <div className="flex w-full items-center justify-between">
-                  <span className="text-xs font-bold text-white">{preset.name}</span>
-                  <span className="text-[10px] font-semibold uppercase">{preset.risk_tier}</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold">{preset.name}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      isSelected
+                        ? "bg-white/15 text-white"
+                        : preset.risk_tier === "High Risk"
+                        ? "bg-red-50 text-red-700 ring-1 ring-red-200"
+                        : preset.risk_tier === "Medium Risk"
+                        ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
+                        : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                    }`}
+                  >
+                    {preset.risk_tier}
+                  </span>
                 </div>
-                <p className="mt-1 text-[11px] leading-tight text-slate-400">
+                <p className={`mt-1 text-xs leading-5 ${isSelected ? "text-slate-300" : "text-slate-500"}`}>
                   {preset.tagline}
                 </p>
               </button>
@@ -105,40 +98,37 @@ export function ScenarioForm({ initialFeatures, isLoading, onSubmit }: ScenarioF
         </div>
       </div>
 
-      {/* 2-Column Ratio Inputs: Solvency vs Operations */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        
-        {/* Card 1: Solvency & Capital Structure */}
-        <div className="rounded-2xl border border-blue-500/20 bg-[#0c1220]/70 p-5 shadow-xl backdrop-blur-xl">
-          <div className="mb-4 flex items-center justify-between border-b border-white/[0.06] pb-3">
+      {/* Inputs — two clean cards */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-blue-300">Solvency & Capital Structure</h3>
-              <p className="text-[11px] text-slate-400">Evaluated by Finance & Risk Agents</p>
+              <h3 className="text-sm font-semibold text-slate-900">Debt & Safety</h3>
+              <p className="text-xs text-slate-500">How much debt does the company carry? · 6 inputs</p>
             </div>
-            <span className="rounded bg-blue-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-blue-400">
-              6 Ratios
-            </span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">6</span>
           </div>
-
           <div className="space-y-4">
-            {solvencyFields.map(([key, config]) => (
-              <div key={key} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-200">{config.label}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-400">Median: {config.default_median}</span>
+            {solvencyFields.map(([key, config]) => {
+              const val = (features[key] as number) ?? config.default_median;
+              const isHealthy = config.healthy_direction === "lower" ? val <= config.default_median : val >= config.default_median;
+              return (
+              <div key={key} className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-medium text-slate-700">{config.label}</label>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`h-2 w-2 rounded-full ${isHealthy ? "bg-emerald-500" : "bg-red-400"}`} title={isHealthy ? "Healthy range" : "Risky range"} />
                     <input
                       type="number"
                       min={config.min}
                       max={config.max}
                       step={config.step}
-                      value={features[key] ?? config.default_median}
+                      value={Number.isFinite(features[key] as number) ? features[key] : config.default_median}
                       onChange={(e) => handleFieldChange(key, parseFloat(e.target.value) || 0)}
-                      className="w-16 rounded border border-white/10 bg-[#070b14] px-1.5 py-0.5 text-right font-mono text-xs font-semibold text-cyan-300 focus:border-cyan-500 focus:outline-none"
+                      className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right text-xs font-medium text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                     />
                   </div>
                 </div>
-
                 <input
                   type="range"
                   min={config.min}
@@ -146,48 +136,44 @@ export function ScenarioForm({ initialFeatures, isLoading, onSubmit }: ScenarioF
                   step={config.step}
                   value={features[key] ?? config.default_median}
                   onChange={(e) => handleFieldChange(key, parseFloat(e.target.value))}
-                  className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-slate-800 accent-blue-500"
+                  className="h-1.5 w-full accent-slate-900"
                 />
-
-                <p className="text-[10px] text-slate-400 leading-tight">
-                  {config.description}
-                </p>
+                <p className="text-xs leading-4 text-slate-500">{config.description}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        {/* Card 2: Operations & Profitability */}
-        <div className="rounded-2xl border border-purple-500/20 bg-[#0c1220]/70 p-5 shadow-xl backdrop-blur-xl">
-          <div className="mb-4 flex items-center justify-between border-b border-white/[0.06] pb-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-purple-300">Operations & Profitability</h3>
-              <p className="text-[11px] text-slate-400">Evaluated by Market & Risk Agents</p>
+              <h3 className="text-sm font-semibold text-slate-900">Profits & Performance</h3>
+              <p className="text-xs text-slate-500">Is the company making enough money? · 4 inputs</p>
             </div>
-            <span className="rounded bg-purple-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-purple-400">
-              4 Ratios
-            </span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">4</span>
           </div>
-
           <div className="space-y-4">
-            {operationsFields.map(([key, config]) => (
-              <div key={key} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-200">{config.label}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-400">Median: {config.default_median}</span>
+            {operationsFields.map(([key, config]) => {
+              const val = (features[key] as number) ?? config.default_median;
+              const isHealthy = config.healthy_direction === "lower" ? val <= config.default_median : val >= config.default_median;
+              return (
+              <div key={key} className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-medium text-slate-700">{config.label}</label>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`h-2 w-2 rounded-full ${isHealthy ? "bg-emerald-500" : "bg-red-400"}`} title={isHealthy ? "Healthy range" : "Risky range"} />
                     <input
                       type="number"
                       min={config.min}
                       max={config.max}
                       step={config.step}
-                      value={features[key] ?? config.default_median}
+                      value={Number.isFinite(features[key] as number) ? features[key] : config.default_median}
                       onChange={(e) => handleFieldChange(key, parseFloat(e.target.value) || 0)}
-                      className="w-16 rounded border border-white/10 bg-[#070b14] px-1.5 py-0.5 text-right font-mono text-xs font-semibold text-purple-300 focus:border-purple-500 focus:outline-none"
+                      className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right text-xs font-medium text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                     />
                   </div>
                 </div>
-
                 <input
                   type="range"
                   min={config.min}
@@ -195,46 +181,37 @@ export function ScenarioForm({ initialFeatures, isLoading, onSubmit }: ScenarioF
                   step={config.step}
                   value={features[key] ?? config.default_median}
                   onChange={(e) => handleFieldChange(key, parseFloat(e.target.value))}
-                  className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-slate-800 accent-purple-500"
+                  className="h-1.5 w-full accent-slate-900"
                 />
-
-                <p className="text-[10px] text-slate-400 leading-tight">
-                  {config.description}
-                </p>
+                <p className="text-xs leading-4 text-slate-500">{config.description}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
-
-          {/* Model Info Badge */}
-          <div className="mt-6 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-[11px] text-slate-400">
-            <span className="font-semibold text-slate-300">💡 10-Feature Direct Model: </span>
-            All 10 ratios are modeled directly by the RandomForest (AUC 0.9253) — no median imputation. Each slider movement directly shifts the distress probability.
-          </div>
+          <p className="mt-5 rounded-xl bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-600 ring-1 ring-slate-200">
+            <span className="font-semibold text-slate-900">10 inputs.</span> Each slider directly changes the AI prediction — what you see is what drives the result.
+          </p>
         </div>
-
       </div>
 
-      {/* Primary Submit Action */}
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex justify-end">
         <button
           type="submit"
           disabled={isLoading}
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] hover:shadow-cyan-500/35 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
         >
           {isLoading ? (
             <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              <span>Running ML & Multi-Agent Inference...</span>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              AI is analyzing…
             </>
           ) : (
             <>
-              <Play className="h-4 w-4 fill-white" />
-              <span>Evaluate Enterprise Scenario</span>
+              <Play className="h-4 w-4" /> Analyze this company
             </>
           )}
         </button>
       </div>
-
     </form>
   );
 }

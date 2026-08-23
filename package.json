@@ -4,6 +4,7 @@
   "description": "ML-Powered Multi-Agent System for Predictive Enterprise Decision Intelligence",
   "private": true,
   "scripts": {
+    "dev": "npm --prefix frontend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "build:frontend": "npm --prefix frontend run build",
     "lint:frontend": "npm --prefix frontend run lint"
