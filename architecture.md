@@ -192,48 +192,50 @@ Structured Response → Frontend
 
 ---
 
-## 4. Component Architecture
+## 4. Component Architecture (Monorepo Layout)
 
-### 4.1 Frontend Components
+Verdyx is structured as a unified full-stack monorepo:
+
+### 4.1 Monorepo Root & Serverless Gateway
+```
+JU-project/ (Root Monorepo)
+├── api/
+│   └── index.py                    # Vercel Python serverless entrypoint (@vercel/python)
+├── vercel.json                     # Unified Vercel build & route rules
+├── package.json                    # Root scripts (run frontend & backend concurrently)
+├── architecture.md                 # System architecture & ADRs
+├── AGENTS.md                       # LLM agent context & project progress log
+├── TASKS.md                        # Project roadmap & completion tracker
+└── VERDYX_ARCHITECTURE_AND_ML_GUIDE.html # Master educational & technical guide
+```
+
+### 4.2 Frontend Components (`frontend/`)
 
 ```
 frontend/
 ├── app/
-│   ├── layout.tsx                  # Root layout with providers
-│   ├── page.tsx                    # Landing / marketing page
-│   ├── (auth)/
-│   │   ├── login/page.tsx          # Supabase login
-│   │   ├── signup/page.tsx         # Supabase signup
-│   │   └── callback/route.ts      # OAuth callback handler
-│   ├── dashboard/
-│   │   ├── layout.tsx              # Dashboard shell (sidebar + nav)
-│   │   ├── page.tsx                # Dashboard overview / history list
-│   │   ├── new-scenario/
-│   │   │   └── page.tsx            # Input form (8-10 numeric fields)
-│   │   └── [scenarioId]/
-│   │       └── page.tsx            # Full results view
-│   └── api/                        # Next.js API routes (proxy if needed)
+│   ├── layout.tsx                  # Root layout with dark theme & SEO metadata
+│   ├── page.tsx                    # Main unified executive decision dashboard
+│   └── globals.css                 # Styling tokens & scrollbars
 ├── components/
-│   ├── ui/                         # shadcn/ui components
-│   ├── scenario-form.tsx           # The main input form component
-│   ├── prediction-result.tsx       # ML prediction display
-│   ├── agent-report-card.tsx       # Individual agent report card
-│   ├── verdict-display.tsx         # Final Decision Agent verdict
-│   ├── risk-gauge.tsx              # Visual risk meter (Recharts)
-│   ├── feature-importance-chart.tsx # Bar chart of top features
-│   └── history-table.tsx           # Past predictions table
+│   ├── navbar.tsx                  # Minimal header with status indicators
+│   ├── scenario-form.tsx           # 10-ratio financial form + 1-click presets
+│   ├── risk-gauge.tsx              # Animated radial distress probability gauge
+│   ├── feature-importance-chart.tsx # Recharts horizontal bar chart (Top Gini factors)
+│   ├── agent-report-card.tsx       # 4-Agent Deck (Finance, Market, Risk, Decision)
+│   ├── what-if-sandbox.tsx         # Real-time sensitivity sliders
+│   └── history-log.tsx             # LocalStorage scenario evaluation history
 ├── lib/
-│   ├── supabase/
-│   │   ├── client.ts               # Browser Supabase client
-│   │   └── server.ts               # Server Supabase client
-│   ├── api.ts                      # Backend API client functions
-│   └── types.ts                    # Shared TypeScript types
-├── tailwind.config.ts
-├── next.config.js
+│   ├── types.ts                    # TypeScript schema definitions
+│   ├── constants.ts                # Form ratio configs & demo presets
+│   └── api.ts                      # Backend connector with local simulation fallback
+├── next.config.ts
+├── postcss.config.mjs
+├── tsconfig.json
 └── package.json
 ```
 
-### 4.2 Backend Components
+### 4.3 Backend Components (`backend/`)
 
 ```
 backend/
@@ -579,62 +581,135 @@ MARKET_FEATURES = [
 
 ---
 
-## 10. Deployment Architecture
+## 10. Deployment & Monorepo Architecture
+
+Verdyx is configured as a full-stack monorepo with multiple deployment topologies supported:
+
+### 10.1 Unified Vercel Monorepo Topology (Single Deployment)
+
+In this primary topology, Next.js and the Python ML + Agent backend are bundled and deployed together under a single Vercel project via serverless routing:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          VERCEL MONOREPO DEPLOYMENT                         │
+│                                                                             │
+│                        Incoming Request (https://verdyx.app)                │
+│                                      │                                      │
+│                                      ▼                                      │
+│                        ┌───────────────────────────┐                        │
+│                        │    Vercel Edge Router     │                        │
+│                        │       (vercel.json)       │                        │
+│                        └─────────────┬─────────────┘                        │
+│                                      │                                      │
+│                 ┌────────────────────┴────────────────────┐                 │
+│                 │                                         │                 │
+│                 ▼                                         ▼                 │
+│     Path: /predict, /health                    Path: /* (All UI pages)      │
+│  ┌─────────────────────────────┐        ┌────────────────────────────────┐  │
+│  │   Python Serverless Gateway │        │     Next.js 16 SSR & Static    │  │
+│  │       (api/index.py)        │        │           (frontend/)          │  │
+│  ├─────────────────────────────┤        ├────────────────────────────────┤  │
+│  │ • @vercel/python runtime    │        │ • Interactive 10-Ratio Form    │  │
+│  │ • In-Memory RandomForest    │        │ • Radial Probability Gauge     │  │
+│  │ • LangGraph 5-Node StateDAG │        │ • Top Gini Attribution Chart   │  │
+│  │ • Groq LLM Multi-Agents     │        │ • 4-Agent Domain Deck          │  │
+│  │ • Fast in-memory inference  │        │ • LocalStorage History Store   │  │
+│  └─────────────────────────────┘        └────────────────────────────────┘  │
+│                                                                             │
+│  Environment Variables:                                                     │
+│  • GROQ_API_KEY / GEMINI_API_KEY                                            │
+│  • LLM_PROVIDER = "groq"                                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Monorepo Routing Rules (`vercel.json`)
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/predict",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/predict/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/health",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/$1"
+    }
+  ]
+}
+```
+
+### 10.2 Distributed Deployment Topology (Alternative / Production Scaling)
+
+For heavy concurrent enterprise workloads requiring dedicated CPU threads for continuous ML batch scoring, the backend can alternatively be deployed to Render or Railway while keeping the Next.js frontend on Vercel:
 
 ```
 ┌────────────────────────────┐     ┌────────────────────────────┐
-│        VERCEL               │     │     RAILWAY / RENDER       │
+│        VERCEL               │     │     RENDER / RAILWAY       │
 │                             │     │                            │
 │  ┌──────────────────────┐  │     │  ┌──────────────────────┐  │
 │  │    Next.js App        │  │────▶│  │    FastAPI Server     │  │
-│  │    (SSR + Static)     │  │     │  │    (uvicorn)          │  │
+│  │    (frontend/)        │  │     │  │    (uvicorn main:app) │  │
 │  └──────────────────────┘  │     │  └──────────┬───────────┘  │
 │                             │     │             │              │
 │  Environment:               │     │  ┌──────────▼───────────┐  │
-│  NEXT_PUBLIC_SUPABASE_URL  │     │  │  predictor.pkl        │  │
-│  NEXT_PUBLIC_SUPABASE_ANON │     │  │  (loaded at startup)  │  │
-│  NEXT_PUBLIC_API_URL       │     │  └────────────────────────┘  │
-└────────────────────────────┘     │                            │
-                                    │  Environment:              │
-          ┌─────────────────┐      │  OPENAI_API_KEY /          │
-          │    SUPABASE      │◀────│  GEMINI_API_KEY            │
-          │                  │      │  DATABASE_URL              │
-          │  PostgreSQL DB   │      │  SUPABASE_SERVICE_ROLE_KEY │
-          │  Auth Service    │      └────────────────────────────┘
-          │  Row Level Sec.  │
-          └─────────────────┘
+│  NEXT_PUBLIC_API_URL       │     │  │  predictor.pkl        │  │
+│                             │     │  │  (loaded at startup)  │  │
+│                             │     │  └────────────────────────┘  │
+└────────────────────────────┘     │  Environment:              │
+                                    │  GROQ_API_KEY              │
+                                    └────────────────────────────┘
 ```
 
-### 10.1 Startup Sequence (Backend)
+### 10.3 Local Monorepo Development (Zero-CORS)
 
-1. Load `predictor.pkl` into memory via `joblib.load()` (one-time, at process start)
-2. Load `feature_medians.json` into memory
-3. Initialize Supabase client
-4. Initialize LangGraph with agent nodes
-5. Start uvicorn server
+A single root command starts both the FastAPI Python backend and the Next.js frontend concurrently:
 
-### 10.2 Performance Considerations
+```bash
+# In Monorepo Root:
+npm run dev
+```
+- **Backend:** Starts FastAPI on `http://127.0.0.1:8000` with hot-reload.
+- **Frontend:** Starts Next.js on `http://localhost:3000`.
+- **Client Fallback:** If the backend is booting up, `frontend/lib/api.ts` automatically executes high-fidelity local simulation, preventing UI crashes.
+
+### 10.4 Performance Considerations
 
 | Component | Expected Latency | Notes |
 |---|---|---|
-| ML Prediction | <100ms | In-memory model, no I/O |
-| Finance Agent | 2-5s | Single LLM call |
-| Market Agent | 2-5s | Single LLM call (parallel with Finance) |
-| Risk Agent | 2-5s | Single LLM call (after Finance + Market) |
-| Decision Agent | 2-5s | Single LLM call |
-| **Total Pipeline** | **8-15s** | With parallel Finance/Market |
-| DB Write | <50ms | Supabase managed |
+| ML Prediction | <100ms | In-memory model, zero disk I/O |
+| Finance Agent | 1.5-3s | Groq `openai/gpt-oss-120b` inference |
+| Market Agent | 1.5-3s | Concurrently executed with Finance Agent |
+| Risk Agent | 1.5-3s | Sequential after Finance + Market outputs |
+| Decision Agent | 1.5-3s | Final synthesized verdict |
+| **Total Pipeline** | **6-10s** | Parallel execution on Groq LPU hardware |
+| History Read/Write | <1ms | Client-side `localStorage` |
 
 ---
 
 ## 11. Security Considerations
 
-1. **Authentication:** Supabase Auth handles user management. JWT tokens passed to backend.
-2. **Row Level Security:** PostgreSQL RLS ensures users can only see their own predictions.
-3. **API Keys:** All LLM API keys stored server-side only (never exposed to frontend).
-4. **Input Validation:** Pydantic models enforce numeric ranges on all form fields.
-5. **CORS:** Restricted to frontend domain in production.
-6. **Rate Limiting:** Consider adding per-user rate limiting on `/predict` endpoint.
+1. **API Keys:** LLM keys (`GROQ_API_KEY`, `GEMINI_API_KEY`) are stored server-side only in Vercel environment variables and never exposed to client bundles.
+2. **Input Clamping & Validation:** Pydantic models validate data types, while feature range bounds protect the model against extreme out-of-distribution values.
+3. **CORS:** Configured with specific allowed origins in FastAPI, eliminated completely when deployed under unified Vercel monorepo routing.
 
 ---
 
@@ -663,6 +738,10 @@ MARKET_FEATURES = [
 ### ADR-006: LocalStorage + In-Memory Store for MVP (Decoupled from Supabase)
 **Decision:** Use browser `localStorage` on the frontend and an in-memory dictionary on the FastAPI backend for scenario history persistence during the MVP/demo phase. Supabase (PostgreSQL + Auth) is retained as an optional future SaaS extension.  
 **Rationale:** The core novelty of Verdyx is the ML-Prior multi-agent decision intelligence architecture. Requiring cloud database credentials, row-level security setups, and user authentication adds external failure points without contributing to the machine learning or agentic reasoning thesis. LocalStorage + in-memory store provides instant, reliable, zero-latency persistence suitable for viva demonstrations and offline presentations.
+
+### ADR-007: Unified Full-Stack Monorepo with Vercel Serverless Gateway
+**Decision:** Organize the project as a unified monorepo with `api/index.py` serving as the serverless bridge for FastAPI under `@vercel/python`, paired with Next.js App Router under `@vercel/next`.  
+**Rationale:** A unified monorepo simplifies deployment to a single `git push`, eliminates cross-origin resource sharing (CORS) complexity in production by routing `/predict` under the same domain, and ensures that ML model weights, multi-agent logic, and frontend components remain version-synchronized.
 
 ---
 

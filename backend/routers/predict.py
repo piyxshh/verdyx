@@ -15,7 +15,6 @@ from fastapi import APIRouter, HTTPException, Request
 
 from models.schemas import (
     PredictionRequest,
-    PredictionCreateResponse,
     PredictionStatusResponse,
     PredictionResultResponse,
     PredictionHistoryResponse,
@@ -27,7 +26,7 @@ from models.schemas import (
 
 router = APIRouter()
 
-# In-memory store for MVP (replace with Supabase in production)
+# In-memory store for MVP (ADR-006: browser localStorage + this dict; no cloud DB)
 predictions_store: dict = {}
 
 

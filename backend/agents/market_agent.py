@@ -34,17 +34,24 @@ async def market_agent_node(state: ScenarioState) -> dict:
 
     messages = build_agent_prompt(
         agent_role="Market & Operations Analyst",
-        agent_instructions="""Analyze the company's operational efficiency and competitive position.
+        agent_instructions="""Analyze the company's operational efficiency and earnings quality.
+
+You have EXACTLY these four ratios — do not reference operating margin, asset
+turnover, or revenue per share (they are not part of this model's feature set),
+and do not say data is missing. Interpret only what is listed above.
 
 Specifically:
-1. Assess operating margin — does the company have pricing power or is margin compressed?
-2. Evaluate asset turnover — is the company efficiently using its assets to generate revenue?
-3. Examine profitability ratios — is net income to total assets adequate?
-4. Assess revenue per share trends — what does this suggest about scale and efficiency?
-5. Conclude: does the operating picture support or contradict the model's distress probability?
+1. Persistent EPS in the Last Four Seasons — earnings stability across the
+   trailing four quarters. Low values (< ~0.18) signal multi-period erosion.
+2. Net Income to Total Assets (ROA) — core capital productivity.
+3. Net profit before tax/Paid-in capital — profitability generated relative
+   to the shareholder capital base.
+4. After-tax net Interest Rate — net interest margin efficiency.
 
-Focus on what the margins and efficiency ratios tell us about the company's competitive viability.
-Companies with thin margins and low asset utilization have less buffer against shocks.""",
+Assess whether the earnings profile supports durable operations or fragile,
+leverage-dependent profitability. Conclude: does this operating picture support
+or contradict the model's distress probability? Reference the actual numbers
+above in every claim you make.""",
         distress_probability=state["distress_probability"],
         top_factors=state["top_factors"],
         relevant_features=relevant_features,

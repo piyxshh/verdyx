@@ -24,6 +24,9 @@ export default function DashboardPage() {
   const [loadingStep, setLoadingStep] = useState<string>("");
   const [showDocsModal, setShowDocsModal] = useState<boolean>(false);
   const [history, setHistory] = useState<PredictionResult[]>([]);
+  // Remounts the form when a scenario is loaded from history so its internal
+  // slider state re-initializes from the restored features.
+  const [formKey, setFormKey] = useState<number>(0);
 
   // Load history & initial prediction on mount
   useEffect(() => {
@@ -76,6 +79,7 @@ export default function DashboardPage() {
   const handleLoadFromHistory = (item: PredictionResult) => {
     if (item.company_features) {
       setCurrentFeatures(item.company_features);
+      setFormKey((k) => k + 1); // force ScenarioForm remount with restored values
     }
     setResult(item);
     window.scrollTo({ top: 400, behavior: "smooth" });
@@ -152,6 +156,7 @@ export default function DashboardPage() {
           </div>
 
           <ScenarioForm
+            key={formKey}
             initialFeatures={currentFeatures}
             isLoading={isLoading}
             onSubmit={handleRunAnalysis}

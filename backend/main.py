@@ -59,8 +59,12 @@ async def lifespan(app: FastAPI):
     """Load ML model and resources at startup, clean up at shutdown."""
     global predictor
 
-    model_path = os.getenv("MODEL_PATH", "../ml/models/predictor.pkl")
-    medians_path = os.getenv("MEDIANS_PATH", "../ml/models/feature_medians.json")
+    backend_dir = Path(__file__).resolve().parent
+    default_model = backend_dir.parent / "ml" / "models" / "predictor.pkl"
+    default_medians = backend_dir.parent / "ml" / "models" / "feature_medians.json"
+
+    model_path = os.getenv("MODEL_PATH", str(default_model))
+    medians_path = os.getenv("MEDIANS_PATH", str(default_medians))
 
     print(f"Loading model from: {model_path}")
     predictor = Predictor(model_path=model_path, medians_path=medians_path)

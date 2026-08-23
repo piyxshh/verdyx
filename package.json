@@ -1,0 +1,20 @@
+{
+  "name": "verdyx-monorepo",
+  "version": "1.0.0",
+  "description": "ML-Powered Multi-Agent System for Predictive Enterprise Decision Intelligence",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "lint:frontend": "npm --prefix frontend run lint"
+  },
+  "keywords": [
+    "enterprise-ai",
+    "langgraph",
+    "fastapi",
+    "nextjs",
+    "machine-learning"
+  ],
+  "author": "Piyush",
+  "license": "CC-BY-4.0"
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { CompanyFeatures } from "@/lib/types";
 
@@ -13,6 +13,14 @@ export function WhatIfSandbox({ currentFeatures, baseProbability }: WhatIfSandbo
   const [borrowingDep, setBorrowingDep] = useState(currentFeatures["Borrowing dependency"] ?? 0.37);
   const [debtRatio, setDebtRatio] = useState(currentFeatures["Debt ratio %"] ?? 0.11);
   const [roa, setRoa] = useState(currentFeatures["Net Income to Total Assets"] ?? 0.80);
+
+  // Re-sync levers whenever a new scenario result loads (preset, history load,
+  // or fresh prediction) so deltas are computed against the right baseline.
+  useEffect(() => {
+    setBorrowingDep(currentFeatures["Borrowing dependency"] ?? 0.37);
+    setDebtRatio(currentFeatures["Debt ratio %"] ?? 0.11);
+    setRoa(currentFeatures["Net Income to Total Assets"] ?? 0.80);
+  }, [currentFeatures]);
 
   // Compute live sensitivity delta
   const depDelta = (borrowingDep - (currentFeatures["Borrowing dependency"] ?? 0.37)) * 0.45;

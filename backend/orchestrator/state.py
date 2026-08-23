@@ -19,7 +19,7 @@ class ScenarioState(TypedDict):
 
     # --- Input (populated from form submission) ---
     scenario_id: str                        # UUID, assigned at creation
-    user_id: str                            # From Supabase auth
+    user_id: str                            # Placeholder — no auth in MVP (ADR-006)
     company_features: dict[str, float]      # 8-10 user fields + median-filled remainder
 
     # --- ML Prediction (populated by predictor node — FIRST) ---

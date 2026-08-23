@@ -34,17 +34,25 @@ async def finance_agent_node(state: ScenarioState) -> dict:
 
     messages = build_agent_prompt(
         agent_role="Financial Solvency & Liquidity Analyst",
-        agent_instructions="""Analyze the company's solvency position and liquidity cushion.
+        agent_instructions="""Analyze the company's solvency position and capital-structure risk.
+
+You have EXACTLY these six ratios — do not reference any other metric, and do not
+say data is missing. Interpret only what is listed above.
 
 Specifically:
-1. Assess the debt ratio — is it within the healthy range for companies in this dataset that did NOT go bankrupt?
-2. Evaluate the current ratio — does it provide adequate short-term liquidity?
-3. Examine retained earnings relative to total assets — does the company have accumulated buffers?
-4. Assess working capital adequacy — is there enough operational breathing room?
-5. Conclude with a summary: is the solvency picture consistent with the model's distress probability?
+1. Debt ratio % — what fraction of assets is creditor-funded? Compare to the
+   healthy band for non-bankrupt firms in this dataset (median ~0.11; distress
+   risk climbs sharply past ~0.30).
+2. Borrowing dependency — how reliant is the firm on external borrowing?
+   Values above ~0.60 were strongly associated with distressed firms.
+3. Total debt/Total net worth — gearing. Above ~0.45, equity cushion is thin.
+4. Net worth/Assets — the equity buffer available to absorb losses.
+5. Retained Earnings to Total Assets — accumulated internal buffer.
+6. Continuous interest rate (after tax) — how much of earnings the interest
+   burden consumes.
 
-Reference specific threshold values where possible (e.g., "a debt ratio above 0.5 was associated with
-higher distress rates in the training data").""",
+Conclude: is this solvency picture consistent with the model's distress probability?
+Reference the actual numbers above in every claim you make.""",
         distress_probability=state["distress_probability"],
         top_factors=state["top_factors"],
         relevant_features=relevant_features,
